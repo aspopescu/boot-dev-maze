@@ -1,4 +1,4 @@
 # boot-dev-maze
 
-boot.dev/learn/build-maze-solver-pythongh repo clone aspopescu/boot-dev-maze
+https://www.boot.dev/learn/build-maze-solver-python
 
