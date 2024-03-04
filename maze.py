@@ -53,29 +53,30 @@ class Cell:
         self.has_bottom_wall = True
         self.visited = False
 
+        self.left_wall = Line(Point(self._x1, self._y1), Point(self._x1, self._y2))
+        self.right_wall = Line(Point(self._x2, self._y1), Point(self._x2, self._y2))
+        self.top_wall = Line(Point(self._x1, self._y1), Point(self._x2, self._y1))
+        self.bottom_wall = Line(Point(self._x1, self._y2), Point(self._x2, self._y2))
+
     def draw(self):
         if self._win is None:
             return
-        left_wall = Line(Point(self._x1, self._y1), Point(self._x1, self._y2))
-        right_wall = Line(Point(self._x2, self._y1), Point(self._x2, self._y2))
-        top_wall = Line(Point(self._x1, self._y1), Point(self._x2, self._y1))
-        bottom_wall = Line(Point(self._x1, self._y2), Point(self._x2, self._y2))
         if self.has_left_wall:
-            self._win.draw_line(left_wall)
+            self._win.draw_line(self.left_wall)
         else:
-            self._win.draw_line(left_wall, "#d9d9d9")
+            self._win.draw_line(self.left_wall, "#d9d9d9")
         if self.has_right_wall:
-            self._win.draw_line(right_wall)
+            self._win.draw_line(self.right_wall)
         else:
-            self._win.draw_line(right_wall, "#d9d9d9")
+            self._win.draw_line(self.right_wall, "#d9d9d9")
         if self.has_top_wall:
-            self._win.draw_line(top_wall)
+            self._win.draw_line(self.top_wall)
         else:
-            self._win.draw_line(top_wall, "#d9d9d9")
+            self._win.draw_line(self.top_wall, "#d9d9d9")
         if self.has_bottom_wall:
-            self._win.draw_line(bottom_wall)
+            self._win.draw_line(self.bottom_wall)
         else:
-            self._win.draw_line(bottom_wall, "#d9d9d9")
+            self._win.draw_line(self.bottom_wall, "#d9d9d9")
 
     def draw_move(self, to_cell, undo=False):
         if self._win is None:
@@ -105,7 +106,8 @@ class Maze:
         self._break_entrance_and_exit()
         if seed != None:
             random.seed(seed)
-
+        self._break_walls_r(num_cols - 1, num_rows - 1)
+        self._reset_cells_visited()
 
     def _create_cells(self):
         for a in range(self._num_cols):
@@ -127,7 +129,7 @@ class Maze:
         if self._win is None:
             return
         self._win.redraw()
-        time.sleep(0.035)
+        time.sleep(0.0035)
 
     def _break_entrance_and_exit(self):
         self._cells[0][0].has_top_wall = False
@@ -137,31 +139,84 @@ class Maze:
 
     def _break_walls_r(self, i, j):
         self._cells[i][j].visited = True
+        print(f"cell i: {i}, cell j: {j}")
+        while True:
+            cells_to_visit = []
+            to_right_x = i + 1
+            to_bottom_y = j + 1
+            to_left_x = i - 1
+            to_top_y = j - 1
+
+            if to_right_x != self._num_cols:
+                if self._cells[to_right_x][j].visited == False:
+                    cells_to_visit.append((self._cells[to_right_x][j], "right"))
+                    print("ok to go right")
+            if to_bottom_y != self._num_rows:
+                if self._cells[i][to_bottom_y].visited == False:
+                    cells_to_visit.append((self._cells[i][to_bottom_y], "bottom"))
+                    print("ok to go bottom")
+            if to_left_x >= 0:
+                if self._cells[to_left_x][j].visited == False:
+                    cells_to_visit.append((self._cells[to_left_x][j], "left"))
+                    print("ok to go left")
+            if to_top_y >= 0:
+                if self._cells[i][to_top_y].visited == False:
+                    cells_to_visit.append((self._cells[i][to_top_y], "top"))
+                    print("ok to go top")
+
+            if len(cells_to_visit) == 0:
+                self._draw_cell(i, j)
+                return
+
+            next_move = random.choice(range(0, len(cells_to_visit)))
+            print(f"next move: {next_move}")
+            next_cell = cells_to_visit[next_move][0]
+            direction = cells_to_visit[next_move][1]
+            if direction == "right":
+                print("moving right")
+                self._cells[i][j].has_right_wall = False
+                next_cell.has_left_wall = False
+                self._break_walls_r(i + 1, j)
+            if direction == "bottom":
+                print("moving bottom")
+                self._cells[i][j].has_bottom_wall = False
+                next_cell.has_top_wall = False
+                self._break_walls_r(i, j + 1)
+            if direction == "left":
+                print("moving left")
+                self._cells[i][j].has_left_wall = False
+                next_cell.has_right_wall = False
+                self._break_walls_r(i - 1, j)
+            if direction == "top":
+                print("moving top")
+                self._cells[i][j].has_top_wall = False
+                next_cell.has_bottom_wall = False
+                self._break_walls_r(i, j - 1)
+            
+    def _reset_cells_visited(self):
+        for cells_list in self._cells:
+            for cell in cells_list:
+                cell.visited = False
+
 
 
 window_width = 800
 window_height = 600
 win = Window(window_width, window_height)
-#cell1 = Cell(100, 100, 200, 200, win)
-#cell2 = Cell(200, 100, 300, 200, win)
-#cell3 = Cell(300, 100, 400, 200, win)
-#cell1.has_right_wall = False
-#cell2.has_left_wall = False
-#cell1.draw()
-#cell2.draw()
-#cell3.draw()
-#cell1.draw_move(cell2)
-#cell2.draw_move(cell3, True)
-maze_num_rows = 4
-maze_num_cols = 6
+maze_num_cols = 16
+maze_num_rows = 12 
 maze_window_border = 20
 cell_width = (window_width - 2 * maze_window_border) / maze_num_cols
 cell_height = (window_height - 2 * maze_window_border) / maze_num_rows
 seed = 0
 the_maze = Maze(maze_window_border, maze_window_border, maze_num_rows, maze_num_cols, cell_width, cell_height, win, seed)
 
-#cellm1 = maze1._cells[5][3]
-#cellm1.draw()
+#the_maze._cells[5][2].visited = True
+#the_maze._cells[4][3].visited = True
+#the_maze._cells[3][2].visited = True
+#the_maze._cells[4][1].visited = True
+#the_maze._break_walls_r(4, 2)
+
 
 win.wait_for_close()
 
