@@ -10,6 +10,8 @@ class Window:
         self.__canvas.pack(fill=BOTH, expand=True)
         self.__window_running = False
         self.__root.protocol("WM_DELETE_WINDOW", self.close)
+        self._ww = width
+        self._wh = height
 
     def redraw(self):
         self.__root.update_idletasks()
@@ -51,6 +53,7 @@ class Cell:
         self.has_right_wall = True
         self.has_top_wall = True
         self.has_bottom_wall = True
+        self.dead_end = False
         self.visited = False
 
         self.left_wall = Line(Point(self._x1, self._y1), Point(self._x1, self._y2))
@@ -106,7 +109,8 @@ class Maze:
         self._break_entrance_and_exit()
         if seed != None:
             random.seed(seed)
-        self._break_walls_r(num_cols - 1, num_rows - 1)
+        #self._break_walls_r(num_cols - 1, num_rows - 1)
+        self._break_walls_r(0, 0)
         self._reset_cells_visited()
 
     def _create_cells(self):
@@ -139,7 +143,7 @@ class Maze:
 
     def _break_walls_r(self, i, j):
         self._cells[i][j].visited = True
-        print(f"cell i: {i}, cell j: {j}")
+        #print(f"cell i: {i}, cell j: {j}")
         while True:
             cells_to_visit = []
             to_right_x = i + 1
@@ -150,45 +154,45 @@ class Maze:
             if to_right_x != self._num_cols:
                 if self._cells[to_right_x][j].visited == False:
                     cells_to_visit.append((self._cells[to_right_x][j], "right"))
-                    print("ok to go right")
+                    #print("ok to go right")
             if to_bottom_y != self._num_rows:
                 if self._cells[i][to_bottom_y].visited == False:
                     cells_to_visit.append((self._cells[i][to_bottom_y], "bottom"))
-                    print("ok to go bottom")
+                    #print("ok to go bottom")
             if to_left_x >= 0:
                 if self._cells[to_left_x][j].visited == False:
                     cells_to_visit.append((self._cells[to_left_x][j], "left"))
-                    print("ok to go left")
+                    #print("ok to go left")
             if to_top_y >= 0:
                 if self._cells[i][to_top_y].visited == False:
                     cells_to_visit.append((self._cells[i][to_top_y], "top"))
-                    print("ok to go top")
+                    #print("ok to go top")
 
             if len(cells_to_visit) == 0:
                 self._draw_cell(i, j)
                 return
 
             next_move = random.choice(range(0, len(cells_to_visit)))
-            print(f"next move: {next_move}")
+            #print(f"next move: {next_move}")
             next_cell = cells_to_visit[next_move][0]
             direction = cells_to_visit[next_move][1]
             if direction == "right":
-                print("moving right")
+                #print("moving right")
                 self._cells[i][j].has_right_wall = False
                 next_cell.has_left_wall = False
                 self._break_walls_r(i + 1, j)
             if direction == "bottom":
-                print("moving bottom")
+                #print("moving bottom")
                 self._cells[i][j].has_bottom_wall = False
                 next_cell.has_top_wall = False
                 self._break_walls_r(i, j + 1)
             if direction == "left":
-                print("moving left")
+                #print("moving left")
                 self._cells[i][j].has_left_wall = False
                 next_cell.has_right_wall = False
                 self._break_walls_r(i - 1, j)
             if direction == "top":
-                print("moving top")
+                #print("moving top")
                 self._cells[i][j].has_top_wall = False
                 next_cell.has_bottom_wall = False
                 self._break_walls_r(i, j - 1)
@@ -198,25 +202,85 @@ class Maze:
             for cell in cells_list:
                 cell.visited = False
 
+    def solve(self):
+        if self._win is None:
+            return
+        start_l1_x1 = self._x1 + self._cell_size_x / 4
+        start_l1_x2 = self._x1 + 3 * self._cell_size_x / 4
+        start_l1_y1 = self._x1 + self._cell_size_y /4
+        start_l1_y2 = self._x1 + 3 * self._cell_size_y /4
+        self._win.draw_line(Line(Point(start_l1_x1, start_l1_y1), Point(start_l1_x2, start_l1_y2)))
+        self._win.draw_line(Line(Point(start_l1_x1, start_l1_y2), Point(start_l1_x2, start_l1_y1)))
+        end_l1_x1 = self._win._ww - start_l1_x2
+        end_l1_x2 = self._win._ww - start_l1_x1
+        end_l1_y1 = self._win._wh - start_l1_y2
+        end_l1_y2 = self._win._wh - start_l1_y1
+        self._win.draw_line(Line(Point(end_l1_x1, end_l1_y1), Point(end_l1_x2, end_l1_y2)))
+        self._win.draw_line(Line(Point(end_l1_x1, end_l1_y2), Point(end_l1_x2, end_l1_y1)))
+        
 
+        return self._solve_r(0, 0)
+
+    def _solve_r(self, i, j):
+        print(f"-- inside of cell i: {i}, cell j: {j}")
+        current_cell = self._cells[i][j]
+        self._animate()
+        current_cell.visited = True
+        if i == self._num_cols - 1 and j == self._num_rows - 1:
+            print("---- last cell reached")
+            return True
+        cells_to_visit = []
+        trace_back = []
+        to_right_x = i + 1
+        to_bottom_y = j + 1
+        to_left_x = i - 1
+        to_top_y = j - 1
+        if to_right_x != self._num_cols:
+            if not current_cell.has_right_wall and not self._cells[to_right_x][j].dead_end:
+                trace_back.append((to_right_x, j))
+                #print(f"---- added right cell to backup plan: {trace_back}")
+                if self._cells[to_right_x][j].visited == False:
+                    cells_to_visit.append((to_right_x, j))
+        if to_bottom_y != self._num_rows:
+            if not current_cell.has_bottom_wall and not self._cells[i][to_bottom_y].dead_end:
+                trace_back.append((i, to_bottom_y))
+                #print(f"---- added bottom cell to backup plan: {trace_back}")
+                if self._cells[i][to_bottom_y].visited == False:
+                    cells_to_visit.append((i, to_bottom_y))
+        if to_left_x >= 0:
+            if not current_cell.has_left_wall and not self._cells[to_left_x][j].dead_end:
+                trace_back.append((to_left_x, j))
+                #print(f"---- added left cell to backup plan: {trace_back}")
+                if self._cells[to_left_x][j].visited == False:
+                    cells_to_visit.append((to_left_x, j))
+        if to_top_y >= 0:
+            if not current_cell.has_top_wall and not self._cells[i][to_top_y].dead_end:
+                trace_back.append((i, to_top_y))
+                #print(f"---- added bottom cell to backup plan: {trace_back}")
+                if self._cells[i][to_top_y].visited == False:
+                    cells_to_visit.append((i, to_top_y))
+        if len(cells_to_visit) > 0:
+            next_cell = self._cells[cells_to_visit[0][0]][cells_to_visit[0][1]]
+            current_cell.draw_move(next_cell)
+            self._solve_r(cells_to_visit[0][0], cells_to_visit[0][1])
+        else:
+            print("---- dead cell reached, turning back")
+            current_cell.dead_end = True
+            return_to_cell = self._cells[trace_back[0][0]][trace_back[0][1]]
+            current_cell.draw_move(return_to_cell, True)
+            self._solve_r(trace_back[0][0], trace_back[0][1])
+            return False
 
 window_width = 800
 window_height = 600
 win = Window(window_width, window_height)
-maze_num_cols = 16
-maze_num_rows = 12 
+maze_num_cols = 32
+maze_num_rows = 24 
 maze_window_border = 20
 cell_width = (window_width - 2 * maze_window_border) / maze_num_cols
 cell_height = (window_height - 2 * maze_window_border) / maze_num_rows
-seed = 0
-the_maze = Maze(maze_window_border, maze_window_border, maze_num_rows, maze_num_cols, cell_width, cell_height, win, seed)
-
-#the_maze._cells[5][2].visited = True
-#the_maze._cells[4][3].visited = True
-#the_maze._cells[3][2].visited = True
-#the_maze._cells[4][1].visited = True
-#the_maze._break_walls_r(4, 2)
-
-
+#seed = 0
+the_maze = Maze(maze_window_border, maze_window_border, maze_num_rows, maze_num_cols, cell_width, cell_height, win)
+the_maze.solve()
 win.wait_for_close()
 
