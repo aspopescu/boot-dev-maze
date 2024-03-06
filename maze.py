@@ -133,7 +133,7 @@ class Maze:
         if self._win is None:
             return
         self._win.redraw()
-        time.sleep(0.0035)
+        time.sleep(0.00035)
 
     def _break_entrance_and_exit(self):
         self._cells[0][0].has_top_wall = False
@@ -222,7 +222,7 @@ class Maze:
         return self._solve_r(0, 0)
 
     def _solve_r(self, i, j):
-        print(f"-- inside of cell i: {i}, cell j: {j}")
+        #print(f"-- inside of cell i: {i}, cell j: {j}")
         current_cell = self._cells[i][j]
         self._animate()
         current_cell.visited = True
@@ -264,12 +264,50 @@ class Maze:
             current_cell.draw_move(next_cell)
             self._solve_r(cells_to_visit[0][0], cells_to_visit[0][1])
         else:
-            print("---- dead cell reached, turning back")
+            #print("---- dead cell reached, turning back")
             current_cell.dead_end = True
             return_to_cell = self._cells[trace_back[0][0]][trace_back[0][1]]
             current_cell.draw_move(return_to_cell, True)
             self._solve_r(trace_back[0][0], trace_back[0][1])
             return False
+
+    def solve_o(self):
+        if self._win is None:
+            return
+        start_l1_x1 = self._x1 + self._cell_size_x / 4
+        start_l1_x2 = self._x1 + 3 * self._cell_size_x / 4
+        start_l1_y1 = self._x1 + self._cell_size_y /4
+        start_l1_y2 = self._x1 + 3 * self._cell_size_y /4
+        self._win.draw_line(Line(Point(start_l1_x1, start_l1_y1), Point(start_l1_x2, start_l1_y2)))
+        self._win.draw_line(Line(Point(start_l1_x1, start_l1_y2), Point(start_l1_x2, start_l1_y1)))
+        end_l1_x1 = self._win._ww - start_l1_x2
+        end_l1_x2 = self._win._ww - start_l1_x1
+        end_l1_y1 = self._win._wh - start_l1_y2
+        end_l1_y2 = self._win._wh - start_l1_y1
+        self._win.draw_line(Line(Point(end_l1_x1, end_l1_y1), Point(end_l1_x2, end_l1_y2)))
+        self._win.draw_line(Line(Point(end_l1_x1, end_l1_y2), Point(end_l1_x2, end_l1_y1)))
+
+        gimmick_lines = []
+
+        start_l2_x1 = self._x1 + self._cell_size_x / 2
+        end_l2_y2 = self._x1 / 2
+        line2 = Line(Point(start_l2_x1, start_l2_x1), Point(start_l2_x1, end_l2_y2))
+        gimmick_lines.append(line2)
+        start_l3_x2 = self._win._ww - self._x1 / 2
+        line3 = Line(Point(start_l2_x1, end_l2_y2), Point(start_l3_x2, end_l2_y2))
+        gimmick_lines.append(line3)
+        end_l4_y2 = self._win._wh - end_l2_y2
+        line4 = Line(Point(start_l3_x2, end_l2_y2), Point(start_l3_x2, end_l4_y2))
+        gimmick_lines.append(line4)
+        end_l5_x2 = self._win._ww - start_l2_x1
+        line5 = Line(Point(start_l3_x2, end_l4_y2), Point(end_l5_x2, end_l4_y2))
+        gimmick_lines.append(line5)
+        end_l6_y2 = self._win._wh - self._x1 - self._cell_size_y / 2
+        line6 = Line(Point(end_l5_x2, end_l4_y2), Point(end_l5_x2, end_l6_y2))
+        gimmick_lines.append(line6)
+
+        for line in gimmick_lines:
+            self._win.draw_line(line, "green")
 
 window_width = 800
 window_height = 600
@@ -281,6 +319,7 @@ cell_width = (window_width - 2 * maze_window_border) / maze_num_cols
 cell_height = (window_height - 2 * maze_window_border) / maze_num_rows
 #seed = 0
 the_maze = Maze(maze_window_border, maze_window_border, maze_num_rows, maze_num_cols, cell_width, cell_height, win)
-the_maze.solve()
+the_maze.solve
+#the_maze.solve_o()
 win.wait_for_close()
 
