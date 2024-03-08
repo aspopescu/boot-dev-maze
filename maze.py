@@ -319,7 +319,7 @@ cell_width = (window_width - 2 * maze_window_border) / maze_num_cols
 cell_height = (window_height - 2 * maze_window_border) / maze_num_rows
 #seed = 0
 the_maze = Maze(maze_window_border, maze_window_border, maze_num_rows, maze_num_cols, cell_width, cell_height, win)
-the_maze.solve
+the_maze.solve()
 #the_maze.solve_o()
 win.wait_for_close()
 
